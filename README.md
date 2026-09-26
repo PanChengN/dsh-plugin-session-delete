@@ -24,27 +24,57 @@
 
 ## 安装
 
-### 1. 取得插件目录
+安装方式有两种，差别很大：**路径安装会把 profile 绑到那个目录上，Git 安装不会。**
+
+| 方式 | 在 Add plugin 里填 | 装完能不能删掉那个目录 | 适合 |
+| --- | --- | --- | --- |
+| **A. Git 地址（推荐）** | `github:PanChengN/dsh-plugin-session-delete` | ✅ 随便删，代码已经拷进 profile | 所有日常使用 |
+| B. 本地路径 | `/绝对路径/dsh-plugin-session-delete` | ❌ 一删就悬空（见「卸载与换设备」） | 只在改插件源码时 |
+
+### 方式 A：Git 地址安装（推荐）
+
+侧栏 **Plugins** 页面 → **Add plugin** → 填：
+
+```
+github:PanChengN/dsh-plugin-session-delete
+```
+
+也可以填 `https://github.com/PanChengN/dsh-plugin-session-delete`。
+想锁版本就加 `#<tag>`，例如 `github:PanChengN/dsh-plugin-session-delete#v1.0.1`。
+
+点 **Enable now**，再重启 DeepSeek Harness（新 bundle 的浏览器模块需要一次进程重启才会进入模块表）。
+
+这样装完，profile 的依赖记录是 `github:PanChengN/dsh-plugin-session-delete`，
+pnpm 会从 `codeload.github.com` 拉 tarball 解到 `<profile>/node_modules/.pnpm/` 下，
+**与任何本地目录无关**：clone 出来的、下载下来的目录随时可以删。
+升级同理：在 Plugins 页面按新 spec 重装（例如把 `#v1.0.1` 换成 `#v1.0.2`）。
+
+### 方式 B：本地路径安装（只在开发插件时用）
 
 ```sh
 git clone https://github.com/PanChengN/dsh-plugin-session-delete.git
 ```
 
-### 2. 在 GUI 里添加（桌面版必须走 GUI）
-
-CLI 明确拒绝桌面 profile：
+然后在 **Add plugin** 里粘贴 clone 出来的目录的**绝对路径**。CLI 明确拒绝桌面 profile：
 
 ```
 $ dsh plugin --profile desktop add <...>
 error: profile "desktop" is managed exclusively by the Electron application
 ```
 
-所以在侧栏 **Plugins** 页面 → **Add plugin** 里粘贴 clone 出来的目录的**绝对路径**，
-装完点 **Enable now**，然后重启 DeepSeek Harness（新 bundle 的浏览器模块需要一次进程重启才会进入模块表）。
+这种安装会在 profile 里写成 `link:<那个目录>`，**插件从此依赖那个目录**：
+一删就悬空，启动会异常（症状与救援见下一节）。改了源码想立刻生效时用它，否则请用方式 A。
+
+### 从方式 B 迁移到方式 A
+
+1. 先在 Plugins 页面 **Remove** 掉路径安装的那份（目录已经删了就先跑一次下一节的救援脚本）
+2. **Add plugin** 里填 `github:PanChengN/dsh-plugin-session-delete` → **Enable now** → 重启
+3. 之后那个 clone 目录就可以随便删了
 
 ## ⚠️ 卸载与换设备（必读）
 
-path 安装会把**绝对路径**写进 profile，所以规则只有一条：**先在 GUI 里卸载，再删目录。**
+- 用**方式 A（Git 地址）**安装的：在 Plugins 页面 **Remove** 即可，没有本地目录需要照顾。
+- 用**方式 B（本地路径）**安装的：规则是**先在 GUI 里卸载，再删目录**。path 安装会把**绝对路径**写进 profile，直接删目录会留下悬空引用。
 
 ### 正确顺序
 
