@@ -42,6 +42,75 @@ error: profile "desktop" is managed exclusively by the Electron application
 所以在侧栏 **Plugins** 页面 → **Add plugin** 里粘贴 clone 出来的目录的**绝对路径**，
 装完点 **Enable now**，然后重启 DeepSeek Harness（新 bundle 的浏览器模块需要一次进程重启才会进入模块表）。
 
+## ⚠️ 卸载与换设备（必读）
+
+path 安装会把**绝对路径**写进 profile，所以规则只有一条：**先在 GUI 里卸载，再删目录。**
+
+### 正确顺序
+
+1. 侧栏 **Plugins** 页面里把本插件 **Disable / Remove**（桌面版必须走 GUI；DSH 的 `removeBundle` 会停用 → 热重载 → `pnpm remove`，同步清理 profile 清单）
+2. 再删掉 clone 出来的目录
+
+### 目录已经被删掉了会怎样
+
+症状：启动异常、插件清单里出现失败条目、界面提示「加载失败；点击重试」，宿主日志里是
+
+```
+dsh: cannot resolve profile bundle "@local/dsh-bundle-session-delete" from the dsh installation or
+<profile 目录>; run 'dsh plugin --profile <name> install' if its dependency is not installed
+```
+
+原因：删目录只删掉了代码，profile 里留下的引用全部悬空。一共三处（外加一处无害的锁文件）：
+
+| 位置 | 内容 |
+| --- | --- |
+| `$DSH_HOME/profiles/<profile>/package.json` | `dependencies` 的 `link:<已删路径>` 与 `dsh.profile.bundles` 里的条目 |
+| `$DSH_HOME/profiles/<profile>/node_modules/@local/dsh-bundle-session-delete` | 指向已删目录的符号链接 |
+| `$DSH_HOME/profiles/<profile>/cordis.yml` | Loader 真正启动的 leaf 配置里那一行 `- id: session-delete` |
+| `pnpm-lock.yaml` / `node_modules/.pnpm/lock.yaml` | 只是记录，下次组合刷新会被重写（脚本不改它） |
+
+补充机制：`loadProfileDirectory()` 对每个 bundle 是逐个 `try/catch` 的，解析失败的 bundle 会被跳过并记进
+`skippedBundles`，**不会**让整个 profile 起不来；真正让界面异常的是上面那些残留引用。
+
+### 救援：跑仓库自带脚本
+
+```sh
+git clone https://github.com/PanChengN/dsh-plugin-session-delete.git   # 或直接用你手上那份
+python3 dsh-plugin-session-delete/scripts/fix-stale-install.py            # 先只检查
+python3 dsh-plugin-session-delete/scripts/fix-stale-install.py --apply    # 确认后执行
+```
+
+脚本会：删除悬空的 `link:` 依赖与对应的 `dsh.profile.bundles` 条目、删掉 profile 私有层的悬空符号链接、
+摘掉 `cordis.yml` 里的残留行，**每个被改动的文件都先备份为 `*.bak-<时间戳>`**（回滚就是覆盖回去）。
+默认是 dry-run，加 `--apply` 才写入。`$DSH_HOME` 不是 `~/.dsh` 时用 `--dsh-home /path` 指定。
+
+`profiles/node_modules/`（共享挂载层）里的历史悬空链接脚本**只统计、不删** —— 那层是 DSH 自己的挂载点，
+解析时按候选目录逐个探测 `package.json`，悬空项会被跳过，无害。
+
+改完重启 DeepSeek Harness 即可；如仍报 pnpm 相关错误，删掉该 profile 的 `node_modules/.pnpm/lock.yaml` 再启动。
+
+### 手工救援（不想跑脚本时）
+
+关掉 App，然后：
+
+1. 编辑 `$DSH_HOME/profiles/<profile>/package.json`：从 `dependencies` 删掉 `"@local/dsh-bundle-session-delete": "link:..."`，并从 `dsh.profile.bundles` 数组里删掉 `"@local/dsh-bundle-session-delete"`
+2. 删掉 `$DSH_HOME/profiles/<profile>/node_modules/@local/dsh-bundle-session-delete`（悬空符号链接）
+3. 编辑 `$DSH_HOME/profiles/<profile>/cordis.yml`，删掉结尾那两行：
+
+   ```yaml
+   - id: session-delete
+     name: '@local/dsh-bundle-session-delete'
+   ```
+
+4. 重新打开 DeepSeek Harness
+
+### 两条禁令
+
+- **别直接 `rm -rf` 一个已启用插件的目录**（本插件、任何 path 安装的插件都一样）
+- **别同时装两份**：本插件的包名是 `@local/dsh-bundle-session-delete`，cordis 行 id 是 `session-delete`，
+  HTTP 路由是 `/api/dsh-session-delete`。同一 profile 里装两份会撞上 `ambiguous-install`，
+  即使装上也会因重复注册同一路由而让插件加载失败。要换成 GitHub 那份，就先在 GUI 里移除本地那份。
+
 ## 删除范围
 
 一次删除会清掉四处，全部基于 `$DSH_HOME`（默认 `~/.dsh`）：

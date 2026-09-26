@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-bundle-session-delete",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "在侧栏会话右键菜单里增加「删除会话」，并提供真正删除会话文件的主机端点。",
@@ -32,7 +32,8 @@
     "client.js",
     "cordis.patch.yml",
     "icon.svg",
-    "locale/*.json"
+    "locale/*.json",
+    "scripts/fix-stale-install.py"
   ],
   "dsh": {
     "bundle": {

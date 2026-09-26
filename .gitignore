@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 *.log
 *.bak
+
+__pycache__/
+*.pyc
