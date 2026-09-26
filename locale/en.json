@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Delete session",
+    "description": "Adds a Delete session row to the sidebar session menu: permanently removes the session log, its projection cache, its subagent sessions, and its sidebar entry."
+  }
+}

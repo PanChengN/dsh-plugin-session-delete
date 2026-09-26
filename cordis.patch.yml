@@ -1,0 +1,5 @@
+# 删除会话 bundle：插入主机半（HTTP 删除端点）。
+# 客户端半由 package.json 的 dsh.client 声明自动发现。
+- insert:
+    - id: session-delete
+      name: '@local/dsh-bundle-session-delete'
