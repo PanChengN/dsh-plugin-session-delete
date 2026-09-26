@@ -4,6 +4,22 @@
   "private": true,
   "type": "module",
   "description": "在侧栏会话右键菜单里增加「删除会话」，并提供真正删除会话文件的主机端点。",
+  "license": "MIT",
+  "author": "NIUpc <niupancheng@163.com> (https://github.com/PanChengN)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PanChengN/dsh-plugin-session-delete.git"
+  },
+  "homepage": "https://github.com/PanChengN/dsh-plugin-session-delete#readme",
+  "bugs": {
+    "url": "https://github.com/PanChengN/dsh-plugin-session-delete/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis",
+    "session-delete"
+  ],
   "icon": "./icon.svg",
   "exports": {
     ".": "./index.js",
